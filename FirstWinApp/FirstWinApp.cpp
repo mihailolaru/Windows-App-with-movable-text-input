@@ -139,27 +139,28 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         if (!leftCtrlDown)
             break;
 
-        const UINT vk = static_cast<UINT>(wParam);
+        const UINT virtualKey = static_cast<UINT>(wParam);
+  
+        BYTE kbd[256] = { 0 };
 
-        // Translate the virtual key to a printable Unicode character.
-        // Trick: neutralize Ctrl in the keyboard-state used for translation,
-        // so ToUnicode gives us the actual character, not a control code.        
-        BYTE kbd[256];
-        GetKeyboardState(kbd);
+        // Try to get the current keyboard state
+        if (!GetKeyboardState(kbd)) {
+            break;
+        }
+
+        // Neutralize Ctrl in the keyboard-state
         kbd[VK_CONTROL] = 0;
         kbd[VK_LCONTROL] = 0;
         kbd[VK_RCONTROL] = 0;
 
-        WCHAR out[4] = { 0 };
-        const UINT sc = MapVirtualKeyW(vk, MAPVK_VK_TO_VSC);
-        int n = ToUnicode(vk, sc, kbd, out, 4, 0);
+        WCHAR outChar[1] = { 0 };                       
+        const UINT scanCode = MapVirtualKeyW(virtualKey, MAPVK_VK_TO_VSC);
+        int n = ToUnicode(virtualKey, scanCode, kbd, outChar, 1, 0);
 
-        if (n == 1 && iswprint(out[0])) {
-            CString add(out[0]);
-
-            str += add;
-
-            InvalidateRect(hWnd, nullptr, TRUE);
+        if (n == 1 && iswprint(outChar[0])) {
+            str += CString(outChar[0]);
+            // trigger repaint
+            InvalidateRect(hWnd, nullptr, TRUE);        
         }
     }
         break;
